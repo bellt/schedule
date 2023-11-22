@@ -804,16 +804,46 @@ class SchedulerTests(unittest.TestCase):
             assert next.minute == 0
 
         with mock_datetime(2023, 9, 18, 10, 00, 0, TZ_AUCKLAND):
-            schedule.clear()
-            # Testing issue #605
+            # Testing timezone conversion the week before daylight saving comes into effect
             # Current time: Monday 18 September 10:00 NZST
             # Current time UTC: Sunday 17 September 22:00
-            # We expect the job to run at 23:00 on Sunday 17 September NZST
-            # That is an expected idle time of 1 hour
             # Expected next run in NZST: 2023-09-18 11:00:00
+            schedule.clear()
             next = schedule.every().day.at("23:00", "UTC").do(mock_job).next_run
-            assert round(schedule.idle_seconds() / 3600) == 1
             assert next.day == 18
+            assert next.hour == 11
+            assert next.minute == 0
+
+        with mock_datetime(2023, 9, 25, 10, 00, 0, TZ_AUCKLAND):
+            # Testing timezone conversion the week after daylight saving comes into effect
+            # Current time: Monday 25 September 10:00 NZDT
+            # Current time UTC: Sunday 24 September 21:00
+            # Expected next run in NZDT: 2023-09-25 12:00:00
+            schedule.clear()
+            next = schedule.every().day.at("23:00", "UTC").do(mock_job).next_run
+            assert next.day == 25
+            assert next.hour == 12
+            assert next.minute == 0
+
+        with mock_datetime(2024, 4, 1, 10, 00, 0, TZ_AUCKLAND):
+            # Testing timezone conversion the week before daylight saving ends
+            # Current time: Monday 1 April 10:00 NZDT
+            # Current time UTC: Sunday 31 March 21:00
+            # Expected next run in NZDT: 2024-04-01 12:00:00
+            schedule.clear()
+            next = schedule.every().day.at("23:00", "UTC").do(mock_job).next_run
+            assert next.day == 1
+            assert next.hour == 12
+            assert next.minute == 0
+
+        with mock_datetime(2024, 4, 8, 10, 00, 0, TZ_AUCKLAND):
+            # Testing timezone conversion the week after daylight saving ends
+            # Current time: Monday 8 April 10:00 NZST
+            # Current time UTC: Sunday 7 April 22:00
+            # Expected next run in NZDT: 2023-04-08 11:00:00
+            schedule.clear()
+            next = schedule.every().day.at("23:00", "UTC").do(mock_job).next_run
+            assert next.day == 8
             assert next.hour == 11
             assert next.minute == 0
 
